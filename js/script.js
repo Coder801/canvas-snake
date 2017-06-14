@@ -1,60 +1,66 @@
 document.addEventListener('DOMContentLoaded', function(){
 
   const canvas = document.querySelector('canvas');
-  const speed = 1000 / 30;
+  const speed = 1000 / 60;
   var options = {
-    width: 600,
-    height: 600,
-    size: 30
+    size: 600,
+    fractions: 25
   };
 
   class Game {
     constructor(canvas, options) {
-      this.pixelWidth = options.width / options.size;
-      this.pixelHeight = options.height / options.size;
-      this.posX = 1;
-      this.posY = 0;
-      this.timer = 0;
+      this.fraction = options.size / options.fractions;
+
+      this.stepX = 0;
+      this.stepY = 0;
+      this.stepInCell = 0;
+      this.currentDirection = 'bottom';
+      this.newDirection = '';
+
       this.head = {
-        x: 0,
-        y: 0
+        x: 24,
+        y: 24
       };
 
       this.ctx = canvas.getContext('2d');
       this.setCanvasSize();
+      this.setDirection(this.currentDirection);
       this.keyListener();
     }
 
+    drawGrid() {
+
+    }
+
     setCanvasSize() {
-      canvas.width = options.width;
-      canvas.height = options.height;
+      canvas.width = options.size;
+      canvas.height = options.size;
     }
 
     drawCanvas() {
       this.ctx.fillStyle = 'white';
-      this.ctx.fillRect(0, 0, options.width, options.height);
+      this.ctx.fillRect(0, 0, options.size, options.size);
     }
 
     drawSnakeHead(x, y) {
       this.ctx.fillStyle = 'green';
-
-      if(x + this.pixelWidth > canvas.width) {
+      if(x + this.fraction > options.size) {
         this.head.x = 0;
       } else if (x < 0) {
-        this.head.x = canvas.width - this.pixelWidth;
+        this.head.x = options.size - this.fraction;
       };
 
-      if(y + this.pixelHeight > canvas.height) {
+      if(y + this.fraction > options.size) {
         this.head.y = 0;
       } else if (y < 0) {
-        this.head.y = canvas.height - this.pixelHeight;
+        this.head.y = options.size - this.fraction;
       };
 
-      this.ctx.fillRect(x, y, this.pixelWidth, this.pixelHeight);
+      this.ctx.fillRect(x, y, this.fraction, this.fraction);
     }
 
     drawSnake() {
-      this.drawSnakeHead(this.head.x + this.posX, this.head.y + this.posY);
+      this.drawSnakeHead(this.head.x + this.stepX, this.head.y + this.stepY);
     }
 
     keyListener() {
@@ -64,46 +70,52 @@ document.addEventListener('DOMContentLoaded', function(){
     control(key) {
       switch (key.keyCode) {
         case 37:
-          this.setDirection('left');
+          this.newDirection = 'left';
           break;
         case 38:
-          this.setDirection('top');
+          this.newDirection = 'top';
           break;
         case 39:
-          this.setDirection('right');
+          this.newDirection = 'right';
           break;
         case 40:
-          this.setDirection('bottom');
+          this.newDirection = 'bottom';
           break;
       }
     }
 
-    setDirection(direction) {
-      switch(direction){
-        case 'top':
-          this.posX = 0;
-          this.posY = -1;
+    changeDirection(x, y, newDirection) {
+      this.stepX = x;
+      this.stepY = y;
+      this.currentDirection = newDirection;
+    }
+
+    setDirection(newDirection) {
+      switch(true){
+        case newDirection === 'top' && this.currentDirection !== 'bottom':
+          this.changeDirection(0, -1, newDirection);
           break;
-        case 'bottom':
-          this.posX = 0;
-          this.posY = 1;
+        case newDirection === 'bottom' && this.currentDirection !== 'top':
+          this.changeDirection(0, 1, newDirection);
           break;
-        case 'left':
-          this.posX = -1;
-          this.posY = 0;
+        case newDirection === 'left' && this.currentDirection !== 'right':
+          this.changeDirection(-1, 0, newDirection)
           break;
-        case 'right':
-          this.posX = 1;
-          this.posY = 0;
+        case newDirection === 'right' && this.currentDirection !== 'left':
+          this.changeDirection(1, 0, newDirection)
       }
     }
 
     init() {
       this.drawCanvas();
       this.drawSnake();
-      this.head.x += this.posX;
-      this.head.y += this.posY;
-      this.timer += 1;
+      this.head.x += this.stepX;
+      this.head.y += this.stepY;
+      if(!(this.stepInCell % this.fraction)) {
+        this.setDirection(this.newDirection)
+        this.stepInCell = 0
+      }
+      this.stepInCell += 1;
     }
   }
 
@@ -116,5 +128,5 @@ document.addEventListener('DOMContentLoaded', function(){
 
   setTimeout(function(){
     clearInterval(interval);
-  }, 10000);
+  }, 50000);
 })
