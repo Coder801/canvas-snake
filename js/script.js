@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function(){
 
   const canvas = document.querySelector('canvas');
-  const speed = 1000 / 60;
+  const speed = 1000 / 20;
   var options = {
     size: 600,
     fractions: 25
@@ -14,22 +14,23 @@ document.addEventListener('DOMContentLoaded', function(){
       this.stepX = 0;
       this.stepY = 0;
       this.stepInCell = 0;
-      this.currentDirection = 'bottom';
+      this.currentDirection = 'top';
       this.newDirection = '';
+      this.length = 1;
+      this.snakeTail = [];
+      this.snakeOldPosition = [];
 
       this.head = {
-        x: 24,
-        y: 24
+        x: this.fraction,
+        y: this.fraction * 5
       };
 
       this.ctx = canvas.getContext('2d');
       this.setCanvasSize();
       this.setDirection(this.currentDirection);
+      this.drawSnakeHead();
+      this.drawSnakeTail();
       this.keyListener();
-    }
-
-    drawGrid() {
-
     }
 
     setCanvasSize() {
@@ -38,29 +39,63 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 
     drawCanvas() {
-      this.ctx.fillStyle = 'white';
+      this.ctx.fillStyle = 'black';
       this.ctx.fillRect(0, 0, options.size, options.size);
     }
 
+    drawSnakeTail() {
+      /*
+      for(let i = 0; i < this.length; i += 1) {
+        let tailFractionX = this.stepX ? this.head.x + this.fraction * i : this.head.x;
+        let tailFractionY = this.stepY ? this.head.y + this.fraction * i : this.head.y;
+        this.snakeTail.push({
+          x: tailFractionX,
+          y: tailFractionY
+        })
+        this.drawSnakeFraction(this.snakeTail[i].x, this.snakeTail[i].y)
+      } */
+
+      this.snakeTail.forEach(item => {
+        this.drawSnakeFraction(item.x, item.y--);
+      })
+    }
+
     drawSnakeHead(x, y) {
-      this.ctx.fillStyle = 'green';
-      if(x + this.fraction > options.size) {
+      if(x > options.size) {
         this.head.x = 0;
-      } else if (x < 0) {
+      } else if (x + this.fraction < 0) {
         this.head.x = options.size - this.fraction;
       };
 
-      if(y + this.fraction > options.size) {
+      if(y > options.size) {
         this.head.y = 0;
-      } else if (y < 0) {
+      } else if (y + this.fraction < 0) {
         this.head.y = options.size - this.fraction;
       };
 
+      if(x < 0) {
+        this.drawSnakeFraction(options.size + x, y);
+      } else if (x + this.fraction > options.size) {
+        this.drawSnakeFraction(x - options.size, y);
+      }
+
+      if(y < 0) {
+        this.drawSnakeFraction(x, options.size + y);
+      } else if (y + this.fraction > options.size) {
+        this.drawSnakeFraction(x, y - options.size);
+      }
+      this.drawSnakeFraction(x, y)
+    }
+
+    drawSnakeFraction(x, y) {
+      this.ctx.fillStyle = 'green';
       this.ctx.fillRect(x, y, this.fraction, this.fraction);
     }
 
     drawSnake() {
       this.drawSnakeHead(this.head.x + this.stepX, this.head.y + this.stepY);
+      this.drawSnakeTail();
+      //this.drawSnakeTail();
     }
 
     keyListener() {
@@ -81,6 +116,9 @@ document.addEventListener('DOMContentLoaded', function(){
         case 40:
           this.newDirection = 'bottom';
           break;
+        case 32:
+          clearInterval(interval)
+          break;
       }
     }
 
@@ -88,6 +126,13 @@ document.addEventListener('DOMContentLoaded', function(){
       this.stepX = x;
       this.stepY = y;
       this.currentDirection = newDirection;
+    }
+
+    savePosition(x, y) {
+      this.snakeTail.push({x: x, y: y});
+      if(this.length < this.snakeTail.length) {
+        this.snakeTail.shift();
+      }
     }
 
     setDirection(newDirection) {
@@ -111,8 +156,10 @@ document.addEventListener('DOMContentLoaded', function(){
       this.drawSnake();
       this.head.x += this.stepX;
       this.head.y += this.stepY;
+      this.drawSnakeTail();
       if(!(this.stepInCell % this.fraction)) {
-        this.setDirection(this.newDirection)
+        this.setDirection(this.newDirection);
+        this.savePosition(this.head.x, this.head.y);
         this.stepInCell = 0
       }
       this.stepInCell += 1;
@@ -121,12 +168,17 @@ document.addEventListener('DOMContentLoaded', function(){
 
   let game = new Game(canvas, options)
   let interval = setInterval(function(){
-    game.init();
+    try {
+      game.init();
+    } catch(err) {
+      clearInterval(interval);
+    }
   }, speed);
 
   game.init();
 
   setTimeout(function(){
     clearInterval(interval);
-  }, 50000);
+  }, 5000);
+
 })
